@@ -18,11 +18,11 @@ const (
 	MinDom = 1
 	MaxDom = 31
 
-	MinMonth = time.January
-	MaxMonth = time.December
+	MinMonth = 1
+	MaxMonth = 12
 
-	MinDow = time.Sunday
-	MaxDow = time.Saturday
+	MinDow = 0
+	MaxDow = 7
 
 	MinYear = 0
 )

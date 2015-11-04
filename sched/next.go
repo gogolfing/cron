@@ -25,7 +25,7 @@ type anyNexter struct {
 }
 
 func (an *anyNexter) FormatString() string {
-	return AnyString
+	return Asterisk
 }
 
 type rangeDivNexter struct {
@@ -46,7 +46,7 @@ func (rdn *rangeDivNexter) next(now int) (int, bool) {
 }
 
 func (rdn *rangeDivNexter) FormatString() string {
-	return fmt.Sprintf("%v%v%v", rdn.rangeNexter.FormatString(), RangeDividor, rdn.inc)
+	return fmt.Sprintf("%v%v%v", rdn.rangeNexter.FormatString(), Slash, rdn.inc)
 }
 
 type rangeNexter struct {
@@ -63,7 +63,7 @@ func (rn *rangeNexter) next(now int) (int, bool) {
 }
 
 func (rn *rangeNexter) FormatString() string {
-	return fmt.Sprintf("%v%v%v", rn.min, RangeSeparator, rn.max)
+	return fmt.Sprintf("%v%v%v", rn.min, Hyphen, rn.max)
 }
 
 type multiNexter []fieldNexter
@@ -77,5 +77,5 @@ func (mn multiNexter) FormatString() string {
 	for i, field := range mn {
 		values[i] = field.FormatString()
 	}
-	return strings.Join(values, FieldPartSeparator)
+	return strings.Join(values, Comma)
 }
