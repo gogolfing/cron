@@ -77,3 +77,34 @@ func TestFieldParts(t *testing.T) {
 		}
 	}
 }
+
+func TestGetNormalizedDirectiveFields(t *testing.T) {
+	tests := []struct {
+		directive string
+		result    []string
+		err       string
+	}{
+		{Yearly, Fields(YearlyFormat), ""},
+		{Annually, Fields(AnnuallyFormat), ""},
+		{Monthly, Fields(MonthlyFormat), ""},
+		{Weekly, Fields(WeeklyFormat), ""},
+		{Daily, Fields(DailyFormat), ""},
+		{Hourly, Fields(HourlyFormat), ""},
+		{Minutely, Fields(MinutelyFormat), ""},
+		{Secondly, Fields(SecondlyFormat), ""},
+		{"@reboot", nil, `the directive "@reboot" is not recognized`},
+	}
+	for _, test := range tests {
+		result, err := getNormalizedDirectiveFields(test.directive)
+		if !reflect.DeepEqual(result, test.result) || (err != nil && err.Error() != test.err) {
+			t.Errorf(
+				"getNormalizedDirectiveFields(%v) = %v, %v WANT %v, %v",
+				test.directive,
+				result,
+				err,
+				test.result,
+				test.err,
+			)
+		}
+	}
+}

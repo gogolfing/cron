@@ -39,8 +39,8 @@ var FieldsFunc = func(r rune) bool {
 	return strings.ContainsRune(FieldSeparators, r)
 }
 
-func Fields(exp string) []string {
-	return strings.FieldsFunc(strings.Trim(exp, TrimCutset), FieldsFunc)
+func Fields(expression string) []string {
+	return strings.FieldsFunc(strings.Trim(expression, TrimCutset), FieldsFunc)
 }
 
 func FieldParts(field string) []string {
@@ -51,14 +51,70 @@ func FieldParts(field string) []string {
 	return result
 }
 
-func MustParse(value string) Schedule {
-	s, err := Parse(value)
+func MustParse(expression string) Schedule {
+	s, err := Parse(expression)
 	if err != nil {
 		panic(err)
 	}
 	return s
 }
 
-func Parse(value string) (Schedule, error) {
+func Parse(expression string) (Schedule, error) {
+	//ParseErrors should be returned from this function and no others.
+	fields, err := getNormalizedFields(expression)
+	if err != nil {
+		return nil, NewParseError(expression, err.Error())
+	}
+	fmt.Println(fields)
 	return nil, nil
+}
+
+func getNormalizedFields(expression string) ([]string, error) {
+	fields := Fields(expression)
+	var err error = nil
+	count, err := validateNumberOfFields(fields)
+	if err != nil {
+		return nil, err
+	}
+	if count == 1 {
+		fields, err = getNormalizedDirectiveFields(fields[0])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return fields, nil
+}
+
+func validateNumberOfFields(fields []string) (int, error) {
+	count := len(fields)
+	if count != 1 && count != 5 && count != 6 && count != 7 {
+		return 0, fmt.Errorf("number of fields must be 1, 5, 6, or 7")
+	}
+	return count, nil
+}
+
+func getNormalizedDirectiveFields(directive string) ([]string, error) {
+	format := ""
+	switch directive {
+	case Yearly:
+		format = YearlyFormat
+	case Annually:
+		format = AnnuallyFormat
+	case Monthly:
+		format = MonthlyFormat
+	case Weekly:
+		format = WeeklyFormat
+	case Daily:
+		format = DailyFormat
+	case Hourly:
+		format = HourlyFormat
+	case Minutely:
+		format = MinutelyFormat
+	case Secondly:
+		format = SecondlyFormat
+	}
+	if format == "" {
+		return nil, fmt.Errorf("the directive %q is not recognized", directive)
+	}
+	return Fields(format), nil
 }
