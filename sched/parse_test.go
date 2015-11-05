@@ -78,6 +78,35 @@ func TestFieldParts(t *testing.T) {
 	}
 }
 
+func TestValidateNumberOfFields(t *testing.T) {
+	errString := "number of fields must be 1, 5, 6, or 7"
+	tests := []struct {
+		fields []string
+		count  int
+		err    string
+	}{
+		{nil, 0, errString},
+		{[]string{}, 0, errString},
+		{make([]string, 1), 1, ""},
+		{make([]string, 2), 0, errString},
+		{make([]string, 3), 0, errString},
+		{make([]string, 4), 0, errString},
+		{make([]string, 5), 5, ""},
+		{make([]string, 6), 6, ""},
+		{make([]string, 7), 7, ""},
+		{make([]string, 8), 0, errString},
+	}
+	for _, test := range tests {
+		count, err := validateNumberOfFields(test.fields)
+		if (err != nil || test.err != "") && err.Error() != test.err {
+			t.Errorf("validateNumberOfFields(%v) error = %v WANT %v", test.fields, err, test.err)
+		}
+		if count != test.count {
+			t.Errorf("validateNumberOfFields(%v) count = %v WANT %v", test.fields, count, test.count)
+		}
+	}
+}
+
 func TestGetNormalizedDirectiveFields(t *testing.T) {
 	tests := []struct {
 		directive string
@@ -96,15 +125,11 @@ func TestGetNormalizedDirectiveFields(t *testing.T) {
 	}
 	for _, test := range tests {
 		result, err := getNormalizedDirectiveFields(test.directive)
-		if !reflect.DeepEqual(result, test.result) || (err != nil && err.Error() != test.err) {
-			t.Errorf(
-				"getNormalizedDirectiveFields(%v) = %v, %v WANT %v, %v",
-				test.directive,
-				result,
-				err,
-				test.result,
-				test.err,
-			)
+		if (err != nil || test.err != "") && err.Error() != test.err {
+			t.Errorf("getNormalizedDirectiveFields(%v) error = %v WANT %v", test.directive, err, test.err)
+		}
+		if !reflect.DeepEqual(result, test.result) {
+			t.Errorf("getNormalizedDirectiveFields(%v) result = %v WANT %v", test.directive, result, test.result)
 		}
 	}
 }
