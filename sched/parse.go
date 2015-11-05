@@ -35,12 +35,12 @@ func (p *ParseError) Error() string {
 	return fmt.Sprintf("sched: could not parse %q: %v", p.Expression, p.Description)
 }
 
-var FieldsFunc = func(r rune) bool {
+var fieldSeparatorFunc = func(r rune) bool {
 	return strings.ContainsRune(FieldSeparators, r)
 }
 
 func Fields(expression string) []string {
-	return strings.FieldsFunc(strings.Trim(expression, TrimCutset), FieldsFunc)
+	return strings.FieldsFunc(strings.Trim(expression, TrimCutset), fieldSeparatorFunc)
 }
 
 func FieldParts(field string) []string {
@@ -65,7 +65,7 @@ func Parse(expression string) (Schedule, error) {
 	if err != nil {
 		return nil, NewParseError(expression, err.Error())
 	}
-	fmt.Println(fields)
+	fmt.Println(fields, err)
 	return nil, nil
 }
 
@@ -84,11 +84,11 @@ func getNormalizedFields(expression string) ([]string, error) {
 	}
 	if count == 5 {
 		fields = append([]string{Asterisk}, fields...)
-		count = 6
+		count++
 	}
 	if count == 6 {
 		fields = append(fields, Asterisk)
-		count = 7
+		count++
 	}
 	return fields, nil
 }
@@ -103,6 +103,7 @@ func validateNumberOfFields(fields []string) (int, error) {
 
 func getNormalizedDirectiveFields(directive string) ([]string, error) {
 	format := ""
+	directive = strings.ToLower(directive)
 	switch directive {
 	case Yearly:
 		format = YearlyFormat

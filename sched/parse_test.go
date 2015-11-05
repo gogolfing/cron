@@ -2,6 +2,7 @@ package sched
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -31,8 +32,8 @@ func TestFieldsFunc(t *testing.T) {
 		{'0', false},
 	}
 	for _, test := range tests {
-		if result := FieldsFunc(test.value); result != test.result {
-			t.Errorf("FieldsFunc(%v) = %v WANT %v", test.value, result, test.result)
+		if result := fieldSeparatorFunc(test.value); result != test.result {
+			t.Errorf("fieldSeparatorFunc(%v) = %v WANT %v", test.value, result, test.result)
 		}
 	}
 }
@@ -78,6 +79,34 @@ func TestFieldParts(t *testing.T) {
 	}
 }
 
+func TestGetNormalizedFields(t *testing.T) {
+	tests := []struct {
+		expression string
+		result     []string
+		hasError   bool
+	}{
+		{"", nil, true},
+		{"expression", nil, true},
+		{Secondly, []string{Asterisk, Asterisk, Asterisk, Asterisk, Asterisk, Asterisk, Asterisk}, false},
+		{"a b ", nil, true},
+		{"a b c", nil, true},
+		{"a b c d", nil, true},
+		{"a b c d e", []string{Asterisk, "a", "b", "c", "d", "e", Asterisk}, false},
+		{"a b c d e f", []string{"a", "b", "c", "d", "e", "f", Asterisk}, false},
+		{"a b c d e f g", []string{"a", "b", "c", "d", "e", "f", "g"}, false},
+		{"a b c d e f g h", nil, true},
+	}
+	for _, test := range tests {
+		result, err := getNormalizedFields(test.expression)
+		if (err != nil) != test.hasError {
+			t.Errorf("getNormalizedFields(%v) error = %v WANT to have an error %v", test.expression, err, test.hasError)
+		}
+		if !reflect.DeepEqual(result, test.result) {
+			t.Errorf("getNormalizedFields(%v) result = %v WANT %v", test.expression, result, test.result)
+		}
+	}
+}
+
 func TestValidateNumberOfFields(t *testing.T) {
 	errString := "number of fields must be 1, 5, 6, or 7"
 	tests := []struct {
@@ -118,6 +147,7 @@ func TestGetNormalizedDirectiveFields(t *testing.T) {
 		{Monthly, Fields(MonthlyFormat), ""},
 		{Weekly, Fields(WeeklyFormat), ""},
 		{Daily, Fields(DailyFormat), ""},
+		{strings.ToUpper(Daily), Fields(DailyFormat), ""},
 		{Hourly, Fields(HourlyFormat), ""},
 		{Minutely, Fields(MinutelyFormat), ""},
 		{Secondly, Fields(SecondlyFormat), ""},

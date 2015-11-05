@@ -1,36 +1,39 @@
 package sched
 
-import (
-	"fmt"
-	"strings"
-)
-
 type fieldNexter interface {
 	next(int) (int, bool)
-	formatStringer
 }
 
 type valueNexter int
 
-func (vn valueNexter) next(now int) (int, bool) {
-	return now, true
+func newValueNexter(value int) valueNexter {
+	return valueNexter(value)
 }
 
-func (vn valueNexter) formatString() string {
-	return fmt.Sprint(vn)
+func (vn valueNexter) next(now int) (int, bool) {
+	return now, true
 }
 
 type anyNexter struct {
 	*rangeNexter
 }
 
-func (an *anyNexter) formatString() string {
-	return Asterisk
+func newAnyNexter(min, max int) *anyNexter {
+	return &anyNexter{
+		rangeNexter: newRangeNexter(min, max),
+	}
 }
 
 type rangeDivNexter struct {
 	*rangeNexter
 	inc int
+}
+
+func newRangeDivNexter(min, max, inc int) *rangeDivNexter {
+	return &rangeDivNexter{
+		rangeNexter: newRangeNexter(min, max),
+		inc:         inc,
+	}
 }
 
 func (rdn *rangeDivNexter) next(now int) (int, bool) {
@@ -45,13 +48,16 @@ func (rdn *rangeDivNexter) next(now int) (int, bool) {
 	return result, false
 }
 
-func (rdn *rangeDivNexter) formatString() string {
-	return fmt.Sprintf("%v%v%v", rdn.rangeNexter.formatString(), Slash, rdn.inc)
-}
-
 type rangeNexter struct {
 	min int
 	max int
+}
+
+func newRangeNexter(min, max int) *rangeNexter {
+	return &rangeNexter{
+		min: min,
+		max: max,
+	}
 }
 
 func (rn *rangeNexter) next(now int) (int, bool) {
@@ -62,20 +68,12 @@ func (rn *rangeNexter) next(now int) (int, bool) {
 	return result, false
 }
 
-func (rn *rangeNexter) formatString() string {
-	return fmt.Sprintf("%v%v%v", rn.min, Hyphen, rn.max)
-}
-
 type multiNexter []fieldNexter
+
+func newMultiNexter(fns ...fieldNexter) multiNexter {
+	return multiNexter(fns)
+}
 
 func (mn multiNexter) next(now int) (int, bool) {
 	return now, true
-}
-
-func (mn multiNexter) formatString() string {
-	values := make([]string, len(mn))
-	for i, field := range mn {
-		values[i] = field.formatString()
-	}
-	return strings.Join(values, Comma)
 }
