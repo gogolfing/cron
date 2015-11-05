@@ -1,9 +1,6 @@
 package sched
 
-import (
-	"fmt"
-	"time"
-)
+import "time"
 
 const (
 	MinSecond = 0
@@ -53,13 +50,13 @@ const (
 	SecondlyFormat = "* * * * * * *"
 )
 
-type FormatStringer interface {
-	FormatString() string
+type formatStringer interface {
+	formatString() string
 }
 
 type Schedule interface {
 	NextTime(from time.Time) (time.Time, bool)
-	FormatString() string
+	Expression() string
 }
 
 const (
@@ -82,6 +79,10 @@ func (s *schedule) NextTime(from time.Time) (time.Time, bool) {
 	return from.Add(1), true
 }
 
+func (s *schedule) Expression() string {
+	return ""
+}
+
 func (s *schedule) String() string {
-	return fmt.Sprintf("%p", s)
+	return s.Expression()
 }

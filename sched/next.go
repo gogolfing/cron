@@ -7,7 +7,7 @@ import (
 
 type fieldNexter interface {
 	next(int) (int, bool)
-	FormatStringer
+	formatStringer
 }
 
 type valueNexter int
@@ -16,7 +16,7 @@ func (vn valueNexter) next(now int) (int, bool) {
 	return now, true
 }
 
-func (vn valueNexter) FormatString() string {
+func (vn valueNexter) formatString() string {
 	return fmt.Sprint(vn)
 }
 
@@ -24,7 +24,7 @@ type anyNexter struct {
 	*rangeNexter
 }
 
-func (an *anyNexter) FormatString() string {
+func (an *anyNexter) formatString() string {
 	return Asterisk
 }
 
@@ -45,8 +45,8 @@ func (rdn *rangeDivNexter) next(now int) (int, bool) {
 	return result, false
 }
 
-func (rdn *rangeDivNexter) FormatString() string {
-	return fmt.Sprintf("%v%v%v", rdn.rangeNexter.FormatString(), Slash, rdn.inc)
+func (rdn *rangeDivNexter) formatString() string {
+	return fmt.Sprintf("%v%v%v", rdn.rangeNexter.formatString(), Slash, rdn.inc)
 }
 
 type rangeNexter struct {
@@ -62,7 +62,7 @@ func (rn *rangeNexter) next(now int) (int, bool) {
 	return result, false
 }
 
-func (rn *rangeNexter) FormatString() string {
+func (rn *rangeNexter) formatString() string {
 	return fmt.Sprintf("%v%v%v", rn.min, Hyphen, rn.max)
 }
 
@@ -72,10 +72,10 @@ func (mn multiNexter) next(now int) (int, bool) {
 	return now, true
 }
 
-func (mn multiNexter) FormatString() string {
+func (mn multiNexter) formatString() string {
 	values := make([]string, len(mn))
 	for i, field := range mn {
-		values[i] = field.FormatString()
+		values[i] = field.formatString()
 	}
 	return strings.Join(values, Comma)
 }

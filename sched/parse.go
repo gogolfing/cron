@@ -82,6 +82,14 @@ func getNormalizedFields(expression string) ([]string, error) {
 			return nil, err
 		}
 	}
+	if count == 5 {
+		fields = append([]string{Asterisk}, fields...)
+		count = 6
+	}
+	if count == 6 {
+		fields = append(fields, Asterisk)
+		count = 7
+	}
 	return fields, nil
 }
 
