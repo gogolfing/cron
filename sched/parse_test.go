@@ -7,14 +7,14 @@ import (
 )
 
 func TestNewParseError(t *testing.T) {
-	err := NewParseError("expression", "description")
+	err := newParseError("expression", "description")
 	if err.Expression != "expression" || err.Description != "description" {
 		t.Fail()
 	}
 }
 
 func TestParseError_Error(t *testing.T) {
-	err := NewParseError("expression", "description")
+	err := newParseError("expression", "description")
 	const want = `sched: could not parse "expression": description`
 	if result := err.Error(); result != want {
 		t.Errorf("err.Error() = %v WANT %v", result, want)

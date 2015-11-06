@@ -24,7 +24,7 @@ type ParseError struct {
 	Description string
 }
 
-func NewParseError(exp, desc string) *ParseError {
+func newParseError(exp, desc string) *ParseError {
 	return &ParseError{
 		Expression:  exp,
 		Description: desc,
@@ -63,7 +63,7 @@ func Parse(expression string) (Schedule, error) {
 	//ParseErrors should be returned from this function and no others.
 	fields, err := getNormalizedFields(expression)
 	if err != nil {
-		return nil, NewParseError(expression, err.Error())
+		return nil, newParseError(expression, err.Error())
 	}
 	fmt.Println(fields, err)
 	return nil, nil
