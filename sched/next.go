@@ -31,9 +31,9 @@ type rangeDivNexter struct {
 	inc int
 }
 
-func newRangeDivNexter(min, max, inc int) *rangeDivNexter {
+func newRangeDivNexter(rn *rangeNexter, inc int) *rangeDivNexter {
 	return &rangeDivNexter{
-		rangeNexter: newRangeNexter(min, max),
+		rangeNexter: rn,
 		inc:         inc,
 	}
 }

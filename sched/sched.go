@@ -1,6 +1,9 @@
 package sched
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	MinSecond = 0
@@ -68,6 +71,16 @@ type schedule struct {
 	year   fieldNexter
 }
 
+func newSchedule() *schedule {
+	return &schedule{}
+}
+
+func (s *schedule) setNexter(nexter interface{}, fi fieldIndex) {
+	if nexter == nil {
+		panic("nexter cannot be nil")
+	}
+}
+
 func (s *schedule) NextTime(from time.Time) (time.Time, bool) {
 	return from.Add(1), true
 }
@@ -102,19 +115,31 @@ func (fi fieldIndex) String() string {
 	return ""
 }
 
+func (fi fieldIndex) isInRange(value int) bool {
+	fr := fi.fieldRange()
+	if fr == nil {
+		return false
+	}
+	return fr.isInRange(value)
+}
+
+func (fi fieldIndex) rangeString() string {
+	fr := fi.fieldRange()
+	if fr == nil {
+		return ""
+	}
+	min, max := fr.min, fr.max
+	if fi == dow {
+		max = max - 1
+	}
+	return fmt.Sprintf("%v%v%v", min, Hyphen, max)
+}
+
 func (fi fieldIndex) fieldRange() *fieldRange {
 	if fi >= 0 && fi < fieldCount {
 		return fieldRanges[fi]
 	}
 	return nil
-}
-
-func (fi fieldIndex) canHaveQuestion() bool {
-	return fi == dom || fi == dow
-}
-
-func (fi fieldIndex) canHaveLast() bool {
-	return fi == dom || fi == dow
 }
 
 func (fi fieldIndex) canHaveHash() bool {
@@ -123,6 +148,10 @@ func (fi fieldIndex) canHaveHash() bool {
 
 func (fi fieldIndex) canHaveWeekday() bool {
 	return fi == dom
+}
+
+func (fi fieldIndex) isDateField() bool {
+	return fi == dom || fi == dow
 }
 
 type fieldRange struct {
