@@ -1,5 +1,7 @@
 package sched
 
+import "time"
+
 type fieldNexter interface {
 	next(int) (int, bool)
 }
@@ -76,4 +78,20 @@ func newMultiNexter(fns ...fieldNexter) multiNexter {
 
 func (mn multiNexter) next(now int) (int, bool) {
 	return now, true
+}
+
+type dateFieldNexter interface {
+	next(now int, time time.Time) (int, bool)
+}
+
+type domFieldNexter struct {
+	fieldNexter
+	isLast    bool
+	isWeekday bool
+}
+
+type dowFieldNexter struct {
+	fieldNexter
+	isLast bool
+	number int
 }
