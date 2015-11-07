@@ -19,12 +19,13 @@ type Event struct {
 }
 
 type Cron struct {
-	lock   *sync.Mutex
-	jobs   map[*Job]bool
-	events chan *Event
+	lock     *sync.Mutex
+	jobs     map[*Job]bool
+	events   chan *Event
+	location *time.Location
 }
 
-func NewCron() *Cron {
+func NewCron(loc *time.Location) *Cron {
 	return &Cron{
 		lock:   &sync.Mutex{},
 		jobs:   map[*Job]bool{},
