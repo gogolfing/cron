@@ -51,15 +51,21 @@ const (
 	SecondlyFormat = "* * * * * * *"
 )
 
-const DefaultMaxAhead = time.Duration(24*365) * time.Hour
+const invalidValue = -1
 
 type Schedule interface {
-	NextTime(from time.Time, maxAhead time.Duration) (time.Time, bool)
+	NextTime(from time.Time) (time.Time, bool)
 	Expression() string
 }
 
 type schedule struct {
-	fields [fieldCount]fieldNexter
+	second fieldNexter
+	minute fieldNexter
+	hour   fieldNexter
+	dom    dateFieldNexter
+	month  fieldNexter
+	dow    dateFieldNexter
+	year   fieldNexter
 }
 
 func (s *schedule) NextTime(from time.Time) (time.Time, bool) {
