@@ -89,3 +89,128 @@ func TestFieldIndex_rangeString(t *testing.T) {
 		}
 	}
 }
+
+func TestFieldIndex_fieldRange(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		result *fieldRange
+	}{
+		{-1, nil},
+		{second, fieldRanges[second]},
+		{minute, fieldRanges[minute]},
+		{hour, fieldRanges[hour]},
+		{dom, fieldRanges[dom]},
+		{month, fieldRanges[month]},
+		{dow, fieldRanges[dow]},
+		{year, fieldRanges[year]},
+		{fieldCount, nil},
+	}
+	for _, test := range tests {
+		if result := test.fi.fieldRange(); result != test.result {
+			t.Errorf("%v.fieldRange() = %v WANT %v", test.fi, result, test.result)
+		}
+	}
+}
+
+func TestFieldIndex_canHaveHash(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		result bool
+	}{
+		{-1, false},
+		{second, false},
+		{dow, true},
+		{fieldCount, false},
+	}
+	for _, test := range tests {
+		if result := test.fi.canHaveHash(); result != test.result {
+			t.Errorf("%v.canHaveHash() = %v WANT %v", test.fi, result, test.result)
+		}
+	}
+}
+
+func TestFieldIndex_canHaveWeekday(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		result bool
+	}{
+		{-1, false},
+		{second, false},
+		{dom, true},
+		{fieldCount, false},
+	}
+	for _, test := range tests {
+		if result := test.fi.canHaveWeekday(); result != test.result {
+			t.Errorf("%v.canHaveWeekday() = %v WANT %v", test.fi, result, test.result)
+		}
+	}
+}
+
+func TestFieldIndex_isDateField(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		result bool
+	}{
+		{-1, false},
+		{second, false},
+		{dom, true},
+		{dow, true},
+		{fieldCount, false},
+	}
+	for _, test := range tests {
+		if result := test.fi.isDateField(); result != test.result {
+			t.Errorf("%v.isDateField() = %v WANT %v", test.fi, result, test.result)
+		}
+	}
+}
+
+func TestFieldIndex_modifiers(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		result string
+	}{
+		{-1, ""},
+		{second, ""},
+		{dom, Last + Weekday},
+		{dow, Last + Hash},
+		{fieldCount, ""},
+	}
+	for _, test := range tests {
+		if result := test.fi.modifiers(); result != test.result {
+			t.Errorf("%v.modifiers() = %v WANT %v", test.fi, result, test.result)
+		}
+	}
+}
+
+func TestFieldRange_isInRange(t *testing.T) {
+	tests := []struct {
+		min    int
+		max    int
+		value  int
+		result bool
+	}{
+		{0, 10, -1, false},
+		{0, 10, 0, true},
+		{0, 10, 4, true},
+		{0, 10, 10, true},
+		{0, 10, 11, false},
+		{8, 8, 7, false},
+		{8, 8, 8, true},
+		{8, 8, 9, false},
+		{10, 0, -1, false},
+		{10, 0, 0, false},
+		{10, 0, 4, false},
+		{10, 0, 10, false},
+		{10, 0, 11, false},
+	}
+	for _, test := range tests {
+		fr := &fieldRange{
+			min: test.min,
+			max: test.max,
+		}
+		result := fr.isInRange(test.value)
+		if result != test.result {
+			t.Errorf("*fieldRange{%v, %v}.isInRange(%v) = %v WANT %v", test.min, test.max, test.value, result, test.result)
+		}
+	}
+}
