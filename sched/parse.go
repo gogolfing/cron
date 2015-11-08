@@ -67,6 +67,13 @@ func Parse(expression string) (Schedule, error) {
 	if err != nil {
 		return nil, newParseError(expression, err.Error())
 	}
+	if len(fieldStrings) == 2 {
+		result, err := parseIntervalExpression(fieldStrings[0], fieldStrings[1])
+		if err != nil {
+			return nil, newParseError(expression, err.Error())
+		}
+		return result, nil
+	}
 	s := newSchedule()
 	for i, fieldString := range fieldStrings {
 		fi := fieldIndex(i)
@@ -77,6 +84,17 @@ func Parse(expression string) (Schedule, error) {
 		s.setNexter(nexter, fi)
 	}
 	return s, nil
+}
+
+func parseIntervalExpression(directive, value string) (Schedule, error) {
+	if strings.ToUpper(directive) != Every {
+		return nil, newDirectiveError(directive)
+	}
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return nil, fmt.Errorf("%v duration value could not be parsed: %v", Every, err.Error())
+	}
+	return NewIntervalSchedule(duration), nil
 }
 
 func getNormalizedFields(expression string) ([]string, error) {
@@ -105,8 +123,8 @@ func getNormalizedFields(expression string) ([]string, error) {
 
 func validateNumberOfFields(fields []string) (int, error) {
 	count := len(fields)
-	if count != 1 && count != 5 && count != 6 && count != 7 {
-		return 0, fmt.Errorf("number of fields must be 1, 5, 6, or 7")
+	if count != 1 && count != 2 && count != 5 && count != 6 && count != 7 {
+		return 0, fmt.Errorf("number of fields must be 1, 2, 5, 6, or 7")
 	}
 	return count, nil
 }
@@ -133,9 +151,13 @@ func getNormalizedDirectiveFields(directive string) ([]string, error) {
 		format = SecondlyFormat
 	}
 	if format == "" {
-		return nil, fmt.Errorf("the directive %q is not recognized", directive)
+		return nil, newDirectiveError(directive)
 	}
 	return Fields(format), nil
+}
+
+func newDirectiveError(directive string) error {
+	return fmt.Errorf("the directive %q is not recognized", directive)
 }
 
 func parseField(field string, fi fieldIndex) (nexter interface{}, err error) {

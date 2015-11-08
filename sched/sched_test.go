@@ -1,6 +1,54 @@
 package sched
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
+
+func TestNewIntervalSchedule(t *testing.T) {
+	s := NewIntervalSchedule(time.Duration(1))
+	if time.Duration(s.(IntervalSchedule)) != time.Duration(1) {
+		t.Errorf("NewIntervalSchedule() failed to cast duration correctly")
+	}
+}
+
+func TestIntervalSchedule_NextTime(t *testing.T) {
+	now := time.Now()
+	tests := []struct {
+		duration time.Duration
+		from     time.Time
+		after    bool
+	}{
+		{time.Hour, now, true},
+		{time.Nanosecond, now, true},
+		{0, now, false},
+		{-1, now, false},
+	}
+	for _, test := range tests {
+		s := NewIntervalSchedule(test.duration)
+		wantNext := test.from.Add(test.duration)
+		next, after := s.NextTime(test.from)
+		if !next.Equal(wantNext) || after != test.after {
+			t.Errorf("%v.NextTime(%v) = %v, %v WANT %v, %v", s, test.from, next, after, wantNext, test.after)
+		}
+	}
+}
+
+func TestIntervalSchedule_String(t *testing.T) {
+	s := NewIntervalSchedule(time.Hour)
+	want := "sched.IntervalSchedule(" + time.Hour.String() + ")"
+	if result := s.(IntervalSchedule).String(); result != want {
+		t.Errorf("%v.String() = %v WANT %v", s, result, want)
+	}
+}
+
+func TestIntervalSchedule_Expression(t *testing.T) {
+	s := NewIntervalSchedule(time.Minute)
+	want := Every + " " + time.Minute.String()
+	if result := s.Expression(); result != want {
+		t.Errorf("%v.Expression() = %v WANT %v", s, result, want)
+	}
+}
 
 func TestFieldIndex_String(t *testing.T) {
 	tests := []struct {

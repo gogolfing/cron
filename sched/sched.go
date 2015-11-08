@@ -52,6 +52,8 @@ const (
 
 	Secondly       = "@secondly"
 	SecondlyFormat = "* * * * * * *"
+
+	Every = "@every"
 )
 
 const invalidValue = -1
@@ -59,6 +61,25 @@ const invalidValue = -1
 type Schedule interface {
 	NextTime(from time.Time) (time.Time, bool)
 	Expression() string
+}
+
+type IntervalSchedule time.Duration
+
+func NewIntervalSchedule(d time.Duration) Schedule {
+	return IntervalSchedule(d)
+}
+
+func (s IntervalSchedule) NextTime(from time.Time) (time.Time, bool) {
+	result := from.Add(time.Duration(s))
+	return result, result.After(from)
+}
+
+func (s IntervalSchedule) String() string {
+	return fmt.Sprintf("sched.IntervalSchedule(%v)", time.Duration(s))
+}
+
+func (s IntervalSchedule) Expression() string {
+	return fmt.Sprintf("%v %v", Every, time.Duration(s))
 }
 
 type schedule struct {

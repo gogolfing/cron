@@ -88,7 +88,7 @@ func TestGetNormalizedFields(t *testing.T) {
 		{"", nil, true},
 		{"expression", nil, true},
 		{Secondly, []string{Asterisk, Asterisk, Asterisk, Asterisk, Asterisk, Asterisk, Asterisk}, false},
-		{"a b ", nil, true},
+		{"a b ", []string{"a", "b"}, false},
 		{"a b c", nil, true},
 		{"a b c d", nil, true},
 		{"a b c d e", []string{Asterisk, "a", "b", "c", "d", "e", Asterisk}, false},
@@ -104,14 +104,14 @@ func TestGetNormalizedFields(t *testing.T) {
 		if !reflect.DeepEqual(result, test.result) {
 			t.Errorf("getNormalizedFields(%v) result = %v WANT %v", test.expression, result, test.result)
 		}
-		if test.result != nil && len(result) != int(fieldCount) {
-			t.Errorf("getNormalizedFields(%v) length must equal %v", test.expression, fieldCount)
+		if test.result != nil && len(result) != int(fieldCount) && len(result) != 2 {
+			t.Errorf("getNormalizedFields(%v) length must equal 2 or %v", test.expression, fieldCount)
 		}
 	}
 }
 
 func TestValidateNumberOfFields(t *testing.T) {
-	errString := "number of fields must be 1, 5, 6, or 7"
+	errString := "number of fields must be 1, 2, 5, 6, or 7"
 	tests := []struct {
 		fields []string
 		count  int
@@ -120,7 +120,7 @@ func TestValidateNumberOfFields(t *testing.T) {
 		{nil, 0, errString},
 		{[]string{}, 0, errString},
 		{make([]string, 1), 1, ""},
-		{make([]string, 2), 0, errString},
+		{make([]string, 2), 2, ""},
 		{make([]string, 3), 0, errString},
 		{make([]string, 4), 0, errString},
 		{make([]string, 5), 5, ""},
