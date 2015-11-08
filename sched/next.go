@@ -63,6 +63,9 @@ func newRangeNexter(min, max int) *rangeNexter {
 }
 
 func (rn *rangeNexter) next(now int) (int, bool) {
+	if now < rn.min {
+		return rn.min, false
+	}
 	result := now + 1
 	if result > rn.max {
 		return rn.min, true
@@ -82,6 +85,12 @@ func (mn multiNexter) next(now int) (int, bool) {
 
 type dateFieldNexter interface {
 	next(now int, time time.Time) (int, bool)
+}
+
+type multiDateFieldNexter []dateFieldNexter
+
+func (mdn multiDateFieldNexter) next(now int, time time.Time) (int, bool) {
+	return now, true
 }
 
 type domFieldNexter struct {

@@ -153,7 +153,18 @@ func parseField(field string, fi fieldIndex) (nexter interface{}, err error) {
 }
 
 func parseDateFieldNexterParts(parts []string, fi fieldIndex) (dateFieldNexter, error) {
-	return nil, nil
+	if len(parts) == 1 {
+		return parseDateFieldNexterPart(parts[0], fi)
+	}
+	result := multiDateNexter(make([]dateFieldNexter, 0, len(parts)))
+	for i, part := range parts {
+		nexter, err := parseDateFieldNexterPart(part, fi)
+		if err != nil {
+			return nil, newPartError(i, err)
+		}
+		result = append(result, nexter)
+	}
+	return result, nil
 }
 
 func parseFieldNexterParts(parts []string, fi fieldIndex) (fieldNexter, error) {
@@ -197,6 +208,13 @@ func parseFieldNexterPart(part string, fi fieldIndex) (fieldNexter, error) {
 	return newRangeDivNexter(rn, inc), nil
 }
 
+func parseDateFieldNexterPart(part string, fi fieldIndex) (dateFieldNexter, error) {
+	if len(part) == 0 {
+		return nil, fmt.Errorf("cannot be empty")
+	}
+	return nil, nil
+}
+
 func parseRangeOrConstantNexter(part string, fi fieldIndex) (fieldNexter, error) {
 	part = convertPossibleAnyToRange(part, fi)
 	if strings.Contains(part, Hyphen) {
@@ -206,11 +224,10 @@ func parseRangeOrConstantNexter(part string, fi fieldIndex) (fieldNexter, error)
 }
 
 func convertPossibleAnyToRange(part string, fi fieldIndex) string {
-	rangeString := fi.rangeString()
 	if fi.isDateField() {
 		part = strings.Replace(part, Question, Asterisk, -1)
 	}
-	return strings.Replace(part, Asterisk, rangeString, -1)
+	return strings.Replace(part, Asterisk, fi.rangeString(), -1)
 }
 
 //parseRangeNexter will panic if part does not conatin Hyphen.
