@@ -154,6 +154,20 @@ func (fi fieldIndex) isDateField() bool {
 	return fi == dom || fi == dow
 }
 
+func (fi fieldIndex) modifiers() string {
+	result := ""
+	if fi.isDateField() {
+		result += Last
+	}
+	if fi.canHaveHash() {
+		result += Hash
+	}
+	if fi.canHaveWeekday() {
+		result += Weekday
+	}
+	return result
+}
+
 type fieldRange struct {
 	min int
 	max int
