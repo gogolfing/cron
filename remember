@@ -1,0 +1,4 @@
+fail for times that do not exist. like 0 0 0 31 4 * *
+
+the range parsing for dow has to account for 0-7
+also account for left side 7 and right side 0
