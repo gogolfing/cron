@@ -157,7 +157,22 @@ func parseDateFieldNexterParts(parts []string, fi fieldIndex) (dateFieldNexter, 
 }
 
 func parseFieldNexterParts(parts []string, fi fieldIndex) (fieldNexter, error) {
-	return nil, nil
+	if len(parts) == 1 {
+		return parseFieldNexterPart(parts[0], fi)
+	}
+	result := multiNexter(make([]fieldNexter, 0, len(parts)))
+	for i, part := range parts {
+		nexter, err := parseFieldNexterPart(part, fi)
+		if err != nil {
+			return nil, newPartError(i, err)
+		}
+		result = append(result, nexter)
+	}
+	return result, nil
+}
+
+func newPartError(index int, old error) error {
+	return fmt.Errorf("part %v: %v", index+1, old.Error())
 }
 
 func parseFieldNexterPart(part string, fi fieldIndex) (fieldNexter, error) {
@@ -209,7 +224,7 @@ func parseRangeNexter(part string, fi fieldIndex) (*rangeNexter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("right side of range: %v", err.Error())
 	}
-	if max <= min {
+	if min >= max {
 		return nil, fmt.Errorf("left side of range must be strictly less than right side")
 	}
 	return newRangeNexter(min, max), nil
