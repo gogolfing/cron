@@ -104,6 +104,9 @@ func TestGetNormalizedFields(t *testing.T) {
 		if !reflect.DeepEqual(result, test.result) {
 			t.Errorf("getNormalizedFields(%v) result = %v WANT %v", test.expression, result, test.result)
 		}
+		if test.result != nil && len(result) != int(fieldCount) {
+			t.Errorf("getNormalizedFields(%v) length must equal %v", test.expression, fieldCount)
+		}
 	}
 }
 

@@ -156,7 +156,7 @@ func parseDateFieldNexterParts(parts []string, fi fieldIndex) (dateFieldNexter, 
 	if len(parts) == 1 {
 		return parseDateFieldNexterPart(parts[0], fi)
 	}
-	result := multiDateNexter(make([]dateFieldNexter, 0, len(parts)))
+	result := multiDateFieldNexter(make([]dateFieldNexter, 0, len(parts)))
 	for i, part := range parts {
 		nexter, err := parseDateFieldNexterPart(part, fi)
 		if err != nil {
