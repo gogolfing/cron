@@ -10,6 +10,8 @@ import (
 var errEmpty error = fmt.Errorf("cannot be empty")
 var errNotInRange error = fmt.Errorf("not in range")
 var errNoHyphen error = fmt.Errorf("does not contain hyphen")
+var errParseIntegerAlias = fmt.Errorf("must be a decimal integer or valid string alias")
+var errParseInteger = fmt.Errorf("must be a decimal integer")
 
 const (
 	Asterisk = "*"
@@ -295,9 +297,9 @@ func parseSingleValue(value string, fi fieldIndex) (int, error) {
 	result, err := strconv.Atoi(value)
 	if err != nil {
 		if fi == month || fi == dow {
-			return invalidValue, fmt.Errorf("must be a decimal integer or valid string alias")
+			return invalidValue, errParseIntegerAlias
 		}
-		return invalidValue, fmt.Errorf("must be a decimal integer")
+		return invalidValue, errParseInteger
 	}
 	if !fi.isInRange(result) {
 		return invalidValue, errNotInRange

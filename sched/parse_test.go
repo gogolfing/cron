@@ -169,7 +169,58 @@ func TestGetNormalizedDirectiveFields(t *testing.T) {
 	}
 }
 
-func TestNormailizeDowRangeValues(t *testing.T) {
+func TestParseRangeNexter(t *testing.T) {
+	tests := []struct {
+		fi    fieldIndex
+		value string
+		min   int
+		max   int
+		err   string
+	}{
+		{second, "", invalidValue, invalidValue, errNoHyphen.Error()},
+		{second, "a", invalidValue, invalidValue, errNoHyphen.Error()},
+		{second, "-25", invalidValue, invalidValue, "left side of range " + errParseInteger.Error()},
+		{second, "25-", invalidValue, invalidValue, "right side of range " + errParseInteger.Error()},
+		{month, "a-b", invalidValue, invalidValue, "left side of range " + errParseIntegerAlias.Error()},
+		{month, "-b", invalidValue, invalidValue, "left side of range " + errParseIntegerAlias.Error()},
+		{month, "4-2", invalidValue, invalidValue, "left side value of range must be strictly less than right side value"},
+		{dow, "SUN-SUN", invalidValue, invalidValue, "left side value of range must be strictly less than right side value"},
+		{month, "feb-may", int(time.February), int(time.May), ""},
+		{year, "1-3005", 1, 3005, ""},
+	}
+	for _, test := range tests {
+		result, err := parseRangeNexter(test.value, test.fi)
+		if err == nil && test.err != "" {
+			t.Fatalf("parseRangeNexter(%v, %v) WANT ERROR got nil", test.value, test.fi)
+		}
+		if err != nil && err.Error() != test.err {
+			t.Errorf("parseRangeNexter(%v, %v) error = %v WANT %v", test.value, test.fi, err, test.err)
+		}
+		if err == nil && (result == nil || result.min != test.min || result.max != test.max) {
+			t.Errorf("parseRangeNexter(%v, %v) result = %v, %v WANT %v, %v", test.value, test.fi, result.min, result.max, test.min, test.max)
+		}
+	}
+}
+
+func TestConvertPossibleAnyToRange(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		value  string
+		result string
+	}{
+		{second, "14", "14"},
+		{second, Asterisk, second.rangeString()},
+		{dom, Asterisk, dom.rangeString()},
+		{dom, Question, dom.rangeString()},
+		{dow, Asterisk, dow.rangeString()},
+		{dow, Question, dow.rangeString()},
+		{year, Question, Question},
+	}
+	for _, test := range tests {
+		if result := convertPossibleAnyToRange(test.value, test.fi); result != test.result {
+			t.Errorf("convertPossibleAnyToRange(%v, %v) = %v WANT %v", test.value, test.fi, result, test.result)
+		}
+	}
 }
 
 func TestParseValueNexter(t *testing.T) {
