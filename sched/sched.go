@@ -22,7 +22,7 @@ const (
 	MaxMonth = 12
 
 	MinDow = 0
-	MaxDow = 7
+	MaxDow = 6
 
 	MinYear = 0
 	MaxYear = 1<<31 - 1 //grabbed from math.MaxInt32
@@ -149,11 +149,7 @@ func (fi fieldIndex) rangeString() string {
 	if fr == nil {
 		return ""
 	}
-	min, max := fr.min, fr.max
-	if fi == dow {
-		max = max - 1
-	}
-	return fmt.Sprintf("%v%v%v", min, Hyphen, max)
+	return fmt.Sprintf("%v%v%v", fr.min, Hyphen, fr.max)
 }
 
 func (fi fieldIndex) fieldRange() *fieldRange {

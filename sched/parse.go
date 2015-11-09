@@ -255,13 +255,6 @@ func parseRangeOrConstantNexter(part string, fi fieldIndex) (fieldNexter, error)
 	return parseValueNexter(part, fi)
 }
 
-func convertPossibleAnyToRange(part string, fi fieldIndex) string {
-	if fi.isDateField() {
-		part = strings.Replace(part, Question, Asterisk, -1)
-	}
-	return strings.Replace(part, Asterisk, fi.rangeString(), -1)
-}
-
 func parseRangeNexter(part string, fi fieldIndex) (*rangeNexter, error) {
 	part = convertPossibleAnyToRange(part, fi)
 	hyphenIndex := strings.Index(part, Hyphen)
@@ -276,30 +269,17 @@ func parseRangeNexter(part string, fi fieldIndex) (*rangeNexter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("right side of range %v", err.Error())
 	}
-	if fi == dow {
-		min, max = normalizeDowRangeValues(min, max)
-	}
 	if min >= max {
 		return nil, fmt.Errorf("left side value of range must be strictly less than right side value")
 	}
 	return newRangeNexter(min, max), nil
 }
 
-func normalizeDowRangeValues(min, max int) (int, int) {
-	isSunday := func(value int) bool {
-		return value == MinDow || value == MaxDow
+func convertPossibleAnyToRange(part string, fi fieldIndex) string {
+	if fi.isDateField() {
+		part = strings.Replace(part, Question, Asterisk, -1)
 	}
-	if isSunday(min) {
-		min = MinDow
-	}
-	if isSunday(max) {
-		if isSunday(min) {
-			max = min
-		} else {
-			max = MaxDow
-		}
-	}
-	return min, max
+	return strings.Replace(part, Asterisk, fi.rangeString(), -1)
 }
 
 func parseValueNexter(part string, fi fieldIndex) (valueNexter, error) {
