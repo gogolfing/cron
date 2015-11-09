@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+var errEmpty error = fmt.Errorf("cannot be empty")
+var errNotInRange error = fmt.Errorf("not in range")
+var errNoHyphen error = fmt.Errorf("does not contain hyphen")
+
 const (
 	Asterisk = "*"
 	Question = "?"
@@ -208,33 +212,39 @@ func newPartError(index int, old error) error {
 	return fmt.Errorf("part %v: %v", index+1, old.Error())
 }
 
+func parseDateFieldNexterPart(part string, fi fieldIndex) (dateFieldNexter, error) {
+	if len(part) == 0 {
+		return nil, errEmpty
+	}
+	return nil, nil
+}
+
 func parseFieldNexterPart(part string, fi fieldIndex) (fieldNexter, error) {
 	if len(part) == 0 {
-		return nil, fmt.Errorf("cannot be empty")
+		return nil, errEmpty
 	}
 	slashIndex := strings.Index(part, Slash)
 	if slashIndex < 0 {
 		return parseRangeOrConstantNexter(part[:slashIndex], fi)
 	}
 	if slashIndex == 0 {
-		return nil, fmt.Errorf("value before step cannot be empty")
+		return nil, fmt.Errorf("value before step %v", errEmpty.Error())
 	}
 	rn, err := parseRangeNexter(part[:slashIndex], fi)
 	if err != nil {
+		if err == errNoHyphen {
+			return nil, fmt.Errorf("invalid required range before step value")
+		}
 		return nil, err
 	}
 	inc, err := parseIncValue(part[slashIndex+1:])
 	if err != nil {
+		if err == errEmpty {
+			return nil, fmt.Errorf("invalid required step value: %v", err.Error())
+		}
 		return nil, err
 	}
 	return newRangeDivNexter(rn, inc), nil
-}
-
-func parseDateFieldNexterPart(part string, fi fieldIndex) (dateFieldNexter, error) {
-	if len(part) == 0 {
-		return nil, fmt.Errorf("cannot be empty")
-	}
-	return nil, nil
 }
 
 func parseRangeOrConstantNexter(part string, fi fieldIndex) (fieldNexter, error) {
@@ -252,21 +262,44 @@ func convertPossibleAnyToRange(part string, fi fieldIndex) string {
 	return strings.Replace(part, Asterisk, fi.rangeString(), -1)
 }
 
-//parseRangeNexter will panic if part does not conatin Hyphen.
 func parseRangeNexter(part string, fi fieldIndex) (*rangeNexter, error) {
+	part = convertPossibleAnyToRange(part, fi)
 	hyphenIndex := strings.Index(part, Hyphen)
+	if hyphenIndex < 0 {
+		return nil, errNoHyphen
+	}
 	min, err := parseSingleValue(part[:hyphenIndex], fi)
 	if err != nil {
-		return nil, fmt.Errorf("left side of range: %v", err.Error())
+		return nil, fmt.Errorf("left side of range %v", err.Error())
 	}
 	max, err := parseSingleValue(part[hyphenIndex+1:], fi)
 	if err != nil {
-		return nil, fmt.Errorf("right side of range: %v", err.Error())
+		return nil, fmt.Errorf("right side of range %v", err.Error())
+	}
+	if fi == dow {
+		min, max = normalizeDowRangeValues(min, max)
 	}
 	if min >= max {
-		return nil, fmt.Errorf("left side of range must be strictly less than right side")
+		return nil, fmt.Errorf("left side value of range must be strictly less than right side value")
 	}
 	return newRangeNexter(min, max), nil
+}
+
+func normalizeDowRangeValues(min, max int) (int, int) {
+	isSunday := func(value int) bool {
+		return value == MinDow || value == MaxDow
+	}
+	if isSunday(min) {
+		min = MinDow
+	}
+	if isSunday(max) {
+		if isSunday(min) {
+			max = min
+		} else {
+			max = MaxDow
+		}
+	}
+	return min, max
 }
 
 func parseValueNexter(part string, fi fieldIndex) (valueNexter, error) {
@@ -281,13 +314,13 @@ func parseSingleValue(value string, fi fieldIndex) (int, error) {
 	value = convertPossibleMonthDowToInteger(value, fi)
 	result, err := strconv.Atoi(value)
 	if err != nil {
-		if fi.isDateField() {
+		if fi == month || fi == dow {
 			return invalidValue, fmt.Errorf("must be a decimal integer or valid string alias")
 		}
 		return invalidValue, fmt.Errorf("must be a decimal integer")
 	}
 	if !fi.isInRange(result) {
-		return invalidValue, fmt.Errorf("not in range")
+		return invalidValue, errNotInRange
 	}
 	return result, nil
 }
@@ -297,7 +330,7 @@ func convertPossibleMonthDowToInteger(value string, fi fieldIndex) string {
 		return convertMonthToInteger(value)
 	}
 	if fi == dow {
-		return converDowToInteger(value)
+		return convertDowToInteger(value)
 	}
 	return value
 }
@@ -306,22 +339,22 @@ func convertMonthToInteger(value string) string {
 	if len(value) < 3 {
 		return value
 	}
-	value = strings.ToUpper(value)
+	compareValue := strings.ToUpper(value)
 	for m := time.January; m <= time.December; m++ {
-		if strings.HasPrefix(strings.ToUpper(fmt.Sprint(m)), value) {
+		if strings.HasPrefix(strings.ToUpper(fmt.Sprint(m)), compareValue) {
 			return fmt.Sprint(int(m))
 		}
 	}
 	return value
 }
 
-func converDowToInteger(value string) string {
+func convertDowToInteger(value string) string {
 	if len(value) < 3 {
 		return value
 	}
-	value = strings.ToUpper(value)
+	compareValue := strings.ToUpper(value)
 	for w := time.Sunday; w <= time.Saturday; w++ {
-		if strings.HasPrefix(strings.ToUpper(fmt.Sprint(w)), value) {
+		if strings.HasPrefix(strings.ToUpper(fmt.Sprint(w)), compareValue) {
 			return fmt.Sprint(int(w))
 		}
 	}
@@ -330,7 +363,7 @@ func converDowToInteger(value string) string {
 
 func parseIncValue(value string) (int, error) {
 	if len(value) == 0 {
-		return invalidValue, fmt.Errorf("step value cannot be empty")
+		return invalidValue, fmt.Errorf("step value %v", errEmpty.Error())
 	}
 	inc, err := strconv.Atoi(value)
 	if err != nil || inc <= 0 {

@@ -1,9 +1,11 @@
 package sched
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewParseError(t *testing.T) {
@@ -163,6 +165,147 @@ func TestGetNormalizedDirectiveFields(t *testing.T) {
 		}
 		if !reflect.DeepEqual(result, test.result) {
 			t.Errorf("getNormalizedDirectiveFields(%v) result = %v WANT %v", test.directive, result, test.result)
+		}
+	}
+}
+
+func TestNormailizeDowRangeValues(t *testing.T) {
+}
+
+func TestParseValueNexter(t *testing.T) {
+	tests := []struct {
+		fi       fieldIndex
+		value    string
+		result   int
+		hasError bool
+	}{
+		{second, "16", 16, false},
+		{minute, "60", invalidValue, true},
+		{hour, "0", 0, false},
+		{month, "something", invalidValue, true},
+		{dow, "tuesday", int(time.Tuesday), false},
+		{year, "something", invalidValue, true},
+	}
+	for _, test := range tests {
+		result, err := parseValueNexter(test.value, test.fi)
+		if (err != nil) != test.hasError {
+			t.Errorf("parseValueNexter(%v, %v) error = %v WANT ERROR %v", test.value, test.fi, err, test.hasError)
+		}
+		if int(result) != test.result {
+			t.Errorf("parseValueNexter(%v, %v) result = %v WANT %v", test.value, test.fi, int(result), test.result)
+		}
+	}
+}
+
+func TestParseSingleValue(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		value  string
+		result int
+		err    string
+	}{
+		{second, "16", 16, ""},
+		{minute, "60", invalidValue, errNotInRange.Error()},
+		{hour, "0", 0, ""},
+		{month, "something", invalidValue, "must be a decimal integer or valid string alias"},
+		{dow, "tuesday", int(time.Tuesday), ""},
+		{dow, "SUN", int(time.Sunday), ""},
+		{year, "something", invalidValue, "must be a decimal integer"},
+	}
+	for _, test := range tests {
+		result, err := parseSingleValue(test.value, test.fi)
+		if err != nil && err.Error() != test.err {
+			t.Errorf("parseSingleValue(%v, %v) error = %v WANT %v", test.value, test.fi, err, test.err)
+		}
+		if result != test.result {
+			t.Errorf("parseSingleValue(%v, %v) result = %v WANT %v", test.value, test.fi, result, test.result)
+		}
+	}
+}
+
+func TestConvertPossibleMonthDowToInteger(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		value  string
+		result string
+	}{
+		{second, "something", "something"},
+		{month, "february", fmt.Sprint(int(time.February))},
+		{dow, "sunday", fmt.Sprint(int(time.Sunday))},
+		{month, "something", "something"},
+	}
+	for _, test := range tests {
+		if result := convertPossibleMonthDowToInteger(test.value, test.fi); result != test.result {
+			t.Errorf("convertPossibleMonthDowToInteger(%v) = %v WANT %v", test.value, result, test.result)
+		}
+	}
+}
+
+func TestConvertMonthToInteger(t *testing.T) {
+	tests := []struct {
+		value  string
+		result string
+	}{
+		{"", ""},
+		{"a", "a"},
+		{"JA", "JA"},
+		{"jan", fmt.Sprint(int(time.January))},
+		{"MAY", fmt.Sprint(int(time.May))},
+		{"Octo", fmt.Sprint(int(time.October))},
+		{"july and some more stuff", "july and some more stuff"},
+		{"4", "4"},
+		{"20", "20"},
+	}
+	for _, test := range tests {
+		if result := convertMonthToInteger(test.value); result != test.result {
+			t.Errorf("convertMonthToInteger(%v) = %v WANT %v", test.value, result, test.result)
+		}
+	}
+}
+
+func TestConvertDowToInteger(t *testing.T) {
+	tests := []struct {
+		value  string
+		result string
+	}{
+		{"", ""},
+		{"a", "a"},
+		{"JA", "JA"},
+		{"sun", fmt.Sprint(int(time.Sunday))},
+		{"Thurs", fmt.Sprint(int(time.Thursday))},
+		{"FRIDAY", fmt.Sprint(int(time.Friday))},
+		{"monday and some more stuff", "monday and some more stuff"},
+		{"4", "4"},
+		{"8", "8"},
+	}
+	for _, test := range tests {
+		if result := convertDowToInteger(test.value); result != test.result {
+			t.Errorf("convertDowToInteger(%v) = %v WANT %v", test.value, result, test.result)
+		}
+	}
+}
+
+func TestParseIncValue(t *testing.T) {
+	const errString = "step value must be a positive decimal integer"
+	tests := []struct {
+		value  string
+		result int
+		err    string
+	}{
+		{"", invalidValue, "step value " + errEmpty.Error()},
+		{"a", invalidValue, errString},
+		{"-1", invalidValue, errString},
+		{"0", invalidValue, errString},
+		{"0xA", invalidValue, errString},
+		{"12", 12, ""},
+	}
+	for _, test := range tests {
+		result, err := parseIncValue(test.value)
+		if (test.err != "" || err != nil) && err.Error() != test.err {
+			t.Errorf("parseIncValue(%v) error = %v WANT %v", test.value, err, test.err)
+		}
+		if result != test.result {
+			t.Errorf("parseIncValue(%v) = %v WANT %v", test.value, result, test.result)
 		}
 	}
 }
