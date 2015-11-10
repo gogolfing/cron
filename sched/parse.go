@@ -117,7 +117,7 @@ func getNormalizedFields(expression string) ([]string, error) {
 		}
 	}
 	if count == 5 {
-		fields = append([]string{Asterisk}, fields...)
+		fields = append([]string{fmt.Sprint(MinSecond)}, fields...)
 		count++
 	}
 	if count == 6 {

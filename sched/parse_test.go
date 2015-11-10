@@ -93,7 +93,7 @@ func TestGetNormalizedFields(t *testing.T) {
 		{"a b ", []string{"a", "b"}, false},
 		{"a b c", nil, true},
 		{"a b c d", nil, true},
-		{"a b c d e", []string{Asterisk, "a", "b", "c", "d", "e", Asterisk}, false},
+		{"a b c d e", []string{"0", "a", "b", "c", "d", "e", Asterisk}, false},
 		{"a b c d e f", []string{"a", "b", "c", "d", "e", "f", Asterisk}, false},
 		{"a b c d e f g", []string{"a", "b", "c", "d", "e", "f", "g"}, false},
 		{"a b c d e f g h", nil, true},
