@@ -227,7 +227,7 @@ func parseFieldNexterPart(part string, fi fieldIndex) (fieldNexter, error) {
 	}
 	slashIndex := strings.Index(part, Slash)
 	if slashIndex < 0 {
-		return parseRangeOrConstantNexter(part[:slashIndex], fi)
+		return parseRangeOrConstantNexter(part, fi)
 	}
 	if slashIndex == 0 {
 		return nil, fmt.Errorf("value before step %v", errEmpty.Error())
@@ -241,10 +241,7 @@ func parseFieldNexterPart(part string, fi fieldIndex) (fieldNexter, error) {
 	}
 	inc, err := parseIncValue(part[slashIndex+1:])
 	if err != nil {
-		if err == errEmpty {
-			return nil, fmt.Errorf("invalid required step value: %v", err.Error())
-		}
-		return nil, err
+		return nil, fmt.Errorf("invalid required step value: %v", err.Error())
 	}
 	return newRangeDivNexter(rn, inc), nil
 }
