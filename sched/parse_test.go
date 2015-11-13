@@ -169,33 +169,6 @@ func TestGetNormalizedDirectiveFields(t *testing.T) {
 	}
 }
 
-func TestParseRangeOrConstantNexter_range(t *testing.T) {
-	tests := []struct {
-		fi     fieldIndex
-		value  string
-		result *rangeNexter
-		err    string
-	}{
-		{second, Hyphen, nil, "left side of range " + errParseInteger.Error()},
-		{second, "0-1", &rangeNexter{0, 1}, ""},
-	}
-	for _, test := range tests {
-		result, err := parseRangeOrConstantNexter(test.value, test.fi)
-		if (err != nil || test.err != "") && err.Error() != test.err {
-			t.Errorf("parseRangeOrConstantNexter(%v, %v) error = %v WANT %v", test.value, test.fi, result, test.err)
-		}
-		if err != nil {
-			continue
-		}
-		rn := result.(*rangeNexter)
-		if rn.min != test.result.min || rn.max != test.result.max {
-			t.Errorf("parseRangeOrConstantNexter(%v, %v) result = %v, %v WANT %v, %v",
-				test.value, test.fi, rn.min, rn.max, test.result.min, test.result.max,
-			)
-		}
-	}
-}
-
 func TestParseFieldNexterPart_errors(t *testing.T) {
 	tests := []struct {
 		value string
@@ -211,6 +184,10 @@ func TestParseFieldNexterPart_errors(t *testing.T) {
 		{"14-16/-1", second},
 		{"15-34/", second},
 		{"23-12", second},
+		{Last, second},
+		{Weekday, second},
+		{Last + Weekday, second},
+		{"2-34#5", second},
 	}
 	for _, test := range tests {
 		result, err := parseFieldNexterPart(test.value, test.fi)
@@ -247,6 +224,33 @@ func TestParseFieldNexterPart_rangeDivNexter(t *testing.T) {
 	want := newRangeDivNexter(newRangeNexter(40, 50), 2)
 	if err != nil || !reflect.DeepEqual(result, want) {
 		t.Errorf("parseFieldNexterPart(%v, %v) = %v, %v WANT %v, %v", value, fi, result, err, want, nil)
+	}
+}
+
+func TestParseRangeOrConstantNexter_range(t *testing.T) {
+	tests := []struct {
+		fi     fieldIndex
+		value  string
+		result *rangeNexter
+		err    string
+	}{
+		{second, Hyphen, nil, "left side of range " + errParseInteger.Error()},
+		{second, "0-1", &rangeNexter{0, 1}, ""},
+	}
+	for _, test := range tests {
+		result, err := parseRangeOrConstantNexter(test.value, test.fi)
+		if (err != nil || test.err != "") && err.Error() != test.err {
+			t.Errorf("parseRangeOrConstantNexter(%v, %v) error = %v WANT %v", test.value, test.fi, result, test.err)
+		}
+		if err != nil {
+			continue
+		}
+		rn := result.(*rangeNexter)
+		if rn.min != test.result.min || rn.max != test.result.max {
+			t.Errorf("parseRangeOrConstantNexter(%v, %v) result = %v, %v WANT %v, %v",
+				test.value, test.fi, rn.min, rn.max, test.result.min, test.result.max,
+			)
+		}
 	}
 }
 

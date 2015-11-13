@@ -1,6 +1,9 @@
 package sched
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type fieldNexter interface {
 	next(int) (int, bool)
@@ -99,8 +102,53 @@ type domFieldNexter struct {
 	isWeekday bool
 }
 
+func newDomFieldNexter(nexter fieldNexter, isLast, isWeekday bool) (*domFieldNexter, error) {
+	if isLast {
+		switch fn := nexter.(type) {
+		case *rangeNexter:
+			if fn.min != MinDom || fn.max != MaxDom {
+				return nil, fmt.Errorf("invalid range for %q modifier", Last)
+			}
+		case *rangeDivNexter:
+			if fn.min != MinDom || fn.max != MaxDom || fn.inc != 1 {
+				return nil, fmt.Errorf("invalid range or step for %q modifier", Last)
+			}
+		case valueNexter:
+			return nil, fmt.Errorf("cannot have static value for %q modifier", Last)
+		}
+	}
+	return &domFieldNexter{
+		fieldNexter: nexter,
+		isLast:      isLast,
+		isWeekday:   isWeekday,
+	}, nil
+}
+
+func (dfn *domFieldNexter) next(now int, time time.Time) (int, bool) {
+	return now, true
+}
+
 type dowFieldNexter struct {
 	fieldNexter
 	isLast bool
 	number int
+}
+
+func newDowFieldNexter(nexter fieldNexter, isLast bool, number int) (*dowFieldNexter, error) {
+	isNumberValid := number >= MinHash && number <= MaxHash
+	if isLast && isNumberValid {
+		return nil, fmt.Errorf("cannot have %q and %q modifiers together", Last, Hash)
+	}
+	if !isNumberValid {
+		number = invalidValue
+	}
+	return &dowFieldNexter{
+		fieldNexter: nexter,
+		isLast:      isLast,
+		number:      number,
+	}, nil
+}
+
+func (dfn *dowFieldNexter) next(now int, time time.Time) (int, bool) {
+	return now, true
 }

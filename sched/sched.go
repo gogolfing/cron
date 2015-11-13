@@ -24,6 +24,9 @@ const (
 	MinDow = 0
 	MaxDow = 6
 
+	MinHash = 1
+	MaxHash = 5
+
 	MinYear = 0
 	MaxYear = 1<<31 - 1 //grabbed from math.MaxInt32
 )

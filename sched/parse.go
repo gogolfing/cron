@@ -218,7 +218,61 @@ func parseDateFieldNexterPart(part string, fi fieldIndex) (dateFieldNexter, erro
 	if len(part) == 0 {
 		return nil, errEmpty
 	}
-	return nil, nil
+	modIndex := strings.IndexAny(part, fi.modifiers())
+	modifiers := ""
+	if modIndex >= 0 {
+		modifiers = strings.ToUpper(part[modIndex:])
+	} else {
+		modIndex = len(part)
+	}
+	fieldNexterPart := part[:modIndex]
+	fn, err := parseFieldNexterPart(fieldNexterPart, fi)
+	if err != nil {
+		return nil, fmt.Errorf("section before modifiers %v", err.Error())
+	}
+	if fi == dom {
+		return parseDomDateField(fn, modifiers)
+	} else if fi == dow {
+		return parseDowDateField(fn, modifiers)
+	}
+	//this should never happen.
+	return nil, fmt.Errorf("invalid fieldIndex %v for date field parsing", fi)
+}
+
+func parseDomDateField(nexter fieldNexter, modifiers string) (*domFieldNexter, error) {
+	modifiers, hasLast := hasAndRemoveModifier(modifiers, Last)
+	modifiers, hasWeekday := hasAndRemoveModifier(modifiers, Weekday)
+	if len(modifiers) != 0 {
+		return nil, fmt.Errorf("unknown modifier %q", modifiers)
+	}
+	return newDomFieldNexter(nexter, hasLast, hasWeekday)
+}
+
+func parseDowDateField(nexter fieldNexter, modifiers string) (*dowFieldNexter, error) {
+	modifiers, hasHash := hasAndRemoveModifier(modifiers, Hash)
+	if hasHash {
+		if _, hasLast := hasAndRemoveModifier(modifiers, Last); hasLast {
+			return nil, fmt.Errorf("cannot have %q and %q modifiers together", Last, Hash)
+		}
+		number, err := strconv.Atoi(modifiers)
+		if err != nil {
+			return nil, fmt.Errorf("value after %q %v", Hash, errParseInteger)
+		}
+		return newDowFieldNexter(nexter, false, number)
+	}
+	modifiers, hasLast := hasAndRemoveModifier(modifiers, Last)
+	if len(modifiers) != 0 {
+		return nil, fmt.Errorf("unknown modifier %q", modifiers)
+	}
+	return newDowFieldNexter(nexter, hasLast, invalidValue)
+}
+
+func hasAndRemoveModifier(modifiers, modifier string) (string, bool) {
+	index := strings.Index(modifiers, modifier)
+	if index < 0 {
+		return modifiers, false
+	}
+	return modifiers[:index] + modifiers[index+len(modifier):], true
 }
 
 func parseFieldNexterPart(part string, fi fieldIndex) (fieldNexter, error) {
