@@ -248,6 +248,7 @@ func parseDomDateField(nexter fieldNexter, modifiers string) (*domFieldNexter, e
 	return newDomFieldNexter(nexter, hasLast, hasWeekday)
 }
 
+//modifiers must start with valid modifier. ie. "2#4" is invalid.
 func parseDowDateField(nexter fieldNexter, modifiers string) (*dowFieldNexter, error) {
 	modifiers, hasHash := hasAndRemoveModifier(modifiers, Hash)
 	if hasHash {
@@ -258,16 +259,19 @@ func parseDowDateField(nexter fieldNexter, modifiers string) (*dowFieldNexter, e
 		if err != nil {
 			return nil, fmt.Errorf("value after %q %v", Hash, errParseInteger)
 		}
-		return newDowFieldNexter(nexter, false, number)
+		return newDowFieldNexter(nexter, false, number, true)
 	}
 	modifiers, hasLast := hasAndRemoveModifier(modifiers, Last)
 	if len(modifiers) != 0 {
 		return nil, fmt.Errorf("unknown modifier %q", modifiers)
 	}
-	return newDowFieldNexter(nexter, hasLast, invalidValue)
+	return newDowFieldNexter(nexter, hasLast, invalidValue, false)
 }
 
 func hasAndRemoveModifier(modifiers, modifier string) (string, bool) {
+	if len(modifier) == 0 {
+		return modifiers, false
+	}
 	index := strings.Index(modifiers, modifier)
 	if index < 0 {
 		return modifiers, false

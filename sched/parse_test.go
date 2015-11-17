@@ -169,6 +169,66 @@ func TestGetNormalizedDirectiveFields(t *testing.T) {
 	}
 }
 
+func TestParseDomDateField(t *testing.T) {
+}
+
+func TestParseDowDateField(t *testing.T) {
+	tests := []struct {
+		modifiers string
+		fieldNexter
+		resultLast bool
+		resultHash int
+		err        string
+	}{
+		{Hash + "6", nil, false, invalidValue, `invalid value for "#" modifier`},
+		{Hash + "-1", nil, false, invalidValue, `invalid value for "#" modifier`},
+		{Hash + "a", nil, false, invalidValue, `value after "#" ` + errParseInteger.Error()},
+		{Last + Hash, nil, false, invalidValue, `cannot have "L" and "#" modifiers together`},
+		{Hash + Last, nil, false, invalidValue, `cannot have "L" and "#" modifiers together`},
+		{Last + Hash + "2", nil, false, invalidValue, `cannot have "L" and "#" modifiers together`},
+		{Last, nil, true, invalidValue, ""},
+		{Hash + "2", nil, false, 2, ""},
+		{Last, nil, true, invalidValue, ""},
+		{"", valueNexter(1), false, invalidValue, ""},
+	}
+	for _, test := range tests {
+		dfn, err := parseDowDateField(test.fieldNexter, test.modifiers)
+		if (err != nil || test.err != "") && err.Error() != test.err {
+			t.Errorf("parseDowDateField(%v, %q) error = %v WANT %v", test.fieldNexter, test.modifiers, err, test.err)
+		}
+		if err != nil {
+			continue
+		}
+		if dfn.fieldNexter != test.fieldNexter || dfn.isLast != test.resultLast || dfn.number != test.resultHash {
+			t.Errorf("parseDowDateField(%v, %q) result = %v WANT %v, %v, %v",
+				test.fieldNexter, test.modifiers, dfn, test.fieldNexter, test.resultLast, test.resultHash,
+			)
+		}
+	}
+}
+
+func TestHasAndRemoveModifier(t *testing.T) {
+	tests := []struct {
+		value    string
+		modifier string
+		result   string
+		has      bool
+	}{
+		{"", Last, "", false},
+		{Last, "", Last, false},
+		{Last + Asterisk, Last, Asterisk, true},
+		{Asterisk + Last, Last, Asterisk, true},
+		{Hash + "value", Hash, "value", true},
+		{Hash + "value", Last, Hash + "value", false},
+	}
+	for _, test := range tests {
+		result, has := hasAndRemoveModifier(test.value, test.modifier)
+		if result != test.result || has != test.has {
+			t.Errorf("hasAndRemoveModifier(%q, %q) = %q, %v WANT %q, %v", test.value, test.modifier, result, has, test.result, test.has)
+		}
+	}
+}
+
 func TestParseFieldNexterPart_errors(t *testing.T) {
 	tests := []struct {
 		value string

@@ -134,12 +134,15 @@ type dowFieldNexter struct {
 	number int
 }
 
-func newDowFieldNexter(nexter fieldNexter, isLast bool, number int) (*dowFieldNexter, error) {
+func newDowFieldNexter(nexter fieldNexter, isLast bool, number int, isNumber bool) (*dowFieldNexter, error) {
 	isNumberValid := number >= MinHash && number <= MaxHash
-	if isLast && isNumberValid {
+	if !isNumberValid && isNumber {
+		return nil, fmt.Errorf("invalid value for %q modifier", Hash)
+	}
+	if isLast && isNumber {
 		return nil, fmt.Errorf("cannot have %q and %q modifiers together", Last, Hash)
 	}
-	if !isNumberValid {
+	if !isNumber {
 		number = invalidValue
 	}
 	return &dowFieldNexter{
