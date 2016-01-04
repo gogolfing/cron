@@ -218,37 +218,59 @@ func parseDateFieldNexterPart(part string, fi fieldIndex) (dateFieldNexter, erro
 	if len(part) == 0 {
 		return nil, errEmpty
 	}
-	modIndex := strings.IndexAny(part, fi.modifiers())
+	modIndex := strings.IndexAny(strings.ToUpper(part), fi.modifiers())
 	modifiers := ""
 	if modIndex >= 0 {
-		modifiers = strings.ToUpper(part[modIndex:])
+		modifiers = part[modIndex:]
 	} else {
 		modIndex = len(part)
 	}
 	fieldNexterPart := part[:modIndex]
 	fn, err := parseFieldNexterPart(fieldNexterPart, fi)
-	if err != nil {
-		return nil, fmt.Errorf("section before modifiers %v", err.Error())
-	}
 	if fi == dom {
+		if err != nil {
+			if err == errEmpty {
+				fn = nil
+			} else {
+				return nil, newBeforeModifierError(fieldNexterPart, err)
+			}
+		}
 		return parseDomDateField(fn, modifiers)
 	} else if fi == dow {
+		if err != nil {
+			return nil, newBeforeModifierError(fieldNexterPart, err)
+		}
 		return parseDowDateField(fn, modifiers)
 	}
 	//this should never happen.
 	return nil, fmt.Errorf("invalid fieldIndex %v for date field parsing", fi)
 }
 
+func newBeforeModifierError(before string, old error) error {
+	return fmt.Errorf("section before modifiers %q %v", before, old.Error())
+}
+
+//nexter may be nil.
 func parseDomDateField(nexter fieldNexter, modifiers string) (*domFieldNexter, error) {
 	modifiers, hasLast := hasAndRemoveModifier(modifiers, Last)
 	modifiers, hasWeekday := hasAndRemoveModifier(modifiers, Weekday)
 	if len(modifiers) != 0 {
-		return nil, fmt.Errorf("unknown modifier %q", modifiers)
+		return nil, newUnknownModifierError(modifiers)
+	}
+	if hasLast && hasWeekday && nexter != nil {
+		return nil, fmt.Errorf("modifiers %q and %q used together cannot have a value before them", Last, Weekday)
+	}
+	if !hasLast && !hasWeekday && nexter == nil {
+		return nil, errEmpty
+	}
+	if _, ok := nexter.(valueNexter); hasWeekday && !ok && !hasLast {
+		return nil, fmt.Errorf("modifier %q can only be used with a single, static value", Weekday)
 	}
 	return newDomFieldNexter(nexter, hasLast, hasWeekday)
 }
 
 //modifiers must start with valid modifier. ie. "2#4" is invalid.
+//nexter cannot be nil.
 func parseDowDateField(nexter fieldNexter, modifiers string) (*dowFieldNexter, error) {
 	modifiers, hasHash := hasAndRemoveModifier(modifiers, Hash)
 	if hasHash {
@@ -263,9 +285,13 @@ func parseDowDateField(nexter fieldNexter, modifiers string) (*dowFieldNexter, e
 	}
 	modifiers, hasLast := hasAndRemoveModifier(modifiers, Last)
 	if len(modifiers) != 0 {
-		return nil, fmt.Errorf("unknown modifier %q", modifiers)
+		return nil, newUnknownModifierError(modifiers)
 	}
 	return newDowFieldNexter(nexter, hasLast, invalidValue, false)
+}
+
+func newUnknownModifierError(modifiers string) error {
+	return fmt.Errorf("unknown modifier %q", modifiers)
 }
 
 func hasAndRemoveModifier(modifiers, modifier string) (string, bool) {

@@ -169,7 +169,153 @@ func TestGetNormalizedDirectiveFields(t *testing.T) {
 	}
 }
 
+func TestParseField(t *testing.T) {
+	/**
+	_ := []struct {
+		field string
+		fieldIndex
+		result interface{}
+		err    string
+	}{}
+	*/
+}
+
+func TestParseDateFieldNexterParts(t *testing.T) {
+	tests := []struct {
+		parts []string
+		fieldIndex
+		resultType reflect.Type
+		err        string
+	}{
+		{[]string{"a"}, dom, nil, `section before modifiers "a" ` + errParseInteger.Error()},
+		{[]string{"a", Asterisk}, dow, nil, `part 1: section before modifiers "a" ` + errParseIntegerAlias.Error()},
+		{[]string{Asterisk}, dom, reflect.TypeOf(&domFieldNexter{}), ""},
+		{[]string{Asterisk}, dow, reflect.TypeOf(&dowFieldNexter{}), ""},
+		{[]string{Asterisk, Asterisk}, dow, reflect.TypeOf(multiDateFieldNexter{}), ""},
+	}
+	for _, test := range tests {
+		result, err := parseDateFieldNexterParts(test.parts, test.fieldIndex)
+		if (err != nil || test.err != "") && err.Error() != test.err {
+			t.Errorf("parseDateFieldNexterParts(%v, %v) error = %v WANT %v", test.parts, test.fieldIndex, err, test.err)
+		}
+		if err != nil {
+			continue
+		}
+		if resultType := reflect.TypeOf(result); resultType != test.resultType {
+			t.Errorf("parseDateFieldNexterParts(%v, %v) result type = %v WANT %v", test.parts, test.fieldIndex, resultType, test.resultType)
+		}
+	}
+}
+
+func TestParseFieldNexterParts(t *testing.T) {
+	tests := []struct {
+		parts []string
+		fieldIndex
+		resultType reflect.Type
+		err        string
+	}{
+		{[]string{"a"}, second, nil, errParseInteger.Error()},
+		{[]string{"a", Asterisk}, second, nil, "part 1: " + errParseInteger.Error()},
+		{[]string{Asterisk}, second, reflect.TypeOf(&rangeNexter{}), ""},
+		{[]string{Asterisk, Asterisk}, second, reflect.TypeOf(multiNexter{}), ""},
+	}
+	for _, test := range tests {
+		result, err := parseFieldNexterParts(test.parts, test.fieldIndex)
+		if (err != nil || test.err != "") && err.Error() != test.err {
+			t.Errorf("parseFieldNexterParts(%v, %v) error = %v WANT %v", test.parts, test.fieldIndex, err, test.err)
+		}
+		if err != nil {
+			continue
+		}
+		if resultType := reflect.TypeOf(result); resultType != test.resultType {
+			t.Errorf("parseFieldNexterParts(%v, %v) result type = %v WANT %v", test.parts, test.fieldIndex, resultType, test.resultType)
+		}
+	}
+}
+
+func TestNewPartError(t *testing.T) {
+	err := newPartError(0, fmt.Errorf("error"))
+	if err.Error() != "part 1: error" {
+		t.Fail()
+	}
+}
+
+func TestParseDateFieldNexterPart(t *testing.T) {
+	tests := []struct {
+		part   string
+		index  fieldIndex
+		result dateFieldNexter
+		err    string
+	}{
+		//bad
+		{"", 0, nil, errEmpty.Error()},
+		{"2" + Weekday, dow, nil, `section before modifiers "2W" must be a decimal integer or valid string alias`},
+		{Hash + "2", dom, nil, `section before modifiers "#2" must be a decimal integer`},
+		{"a" + Weekday, dom, nil, `section before modifiers "a" must be a decimal integer`},
+		{"", dow, nil, errEmpty.Error()},
+		{Asterisk, year, nil, "invalid fieldIndex year for date field parsing"},
+		//good
+		{Last, dom, &domFieldNexter{nil, true, false}, ""},
+		{Last + Weekday, dom, &domFieldNexter{nil, true, true}, ""},
+	}
+	for _, test := range tests {
+		result, err := parseDateFieldNexterPart(test.part, test.index)
+		if (err != nil || test.err != "") && err.Error() != test.err {
+			t.Errorf("parseDateFieldNexterPart(%q, %v) error = %v WANT %v", test.part, test.index, err, test.err)
+		}
+		if err != nil {
+			continue
+		}
+		if !reflect.DeepEqual(result, test.result) {
+			t.Errorf("parseDateFieldNexterPart(%q, %v) result = %v WANT %v", test.part, test.index, result, test.result)
+		}
+	}
+}
+
+func TestNewBeforeModifierError(t *testing.T) {
+	err := newBeforeModifierError("before", fmt.Errorf("error"))
+	if err.Error() != `section before modifiers "before" error` {
+		t.Fail()
+	}
+}
+
 func TestParseDomDateField(t *testing.T) {
+	tests := []struct {
+		modifiers string
+		fieldNexter
+		resultLast    bool
+		resultWeekday bool
+		err           string
+	}{
+		//bad
+		{"", nil, false, false, errEmpty.Error()},
+		{Weekday, &rangeNexter{1, 2}, false, false, `modifier "W" can only be used with a single, static value`},
+		{Weekday, nil, false, false, `modifier "W" can only be used with a single, static value`},
+		{"a", nil, false, false, `unknown modifier "a"`},
+		{Last + Weekday, valueNexter(1), true, true, `modifiers "L" and "W" used together cannot have a value before them`},
+		{Weekday + Last, valueNexter(1), true, true, `modifiers "L" and "W" used together cannot have a value before them`},
+		//good
+		{"", valueNexter(1), false, false, ""},
+		{Last, &rangeNexter{MinDom, MaxDom}, true, false, ""},
+		{Last, nil, true, false, ""},
+		{Weekday, valueNexter(2), false, true, ""},
+		{Last + Weekday, nil, true, true, ""},
+		{Weekday + Last, nil, true, true, ""},
+	}
+	for _, test := range tests {
+		dfn, err := parseDomDateField(test.fieldNexter, test.modifiers)
+		if (err != nil || test.err != "") && err.Error() != test.err {
+			t.Errorf("parseDomDateField(%v, %q) error = %v WANT %v", test.fieldNexter, test.modifiers, err, test.err)
+		}
+		if err != nil {
+			continue
+		}
+		if dfn.fieldNexter != test.fieldNexter || dfn.isLast != test.resultLast || dfn.isWeekday != test.resultWeekday {
+			t.Errorf("parseDomDateField(%v, %q) result = %v WANT %v, %v, %v",
+				test.fieldNexter, test.modifiers, dfn, test.fieldNexter, test.resultLast, test.resultWeekday,
+			)
+		}
+	}
 }
 
 func TestParseDowDateField(t *testing.T) {
@@ -186,6 +332,7 @@ func TestParseDowDateField(t *testing.T) {
 		{Last + Hash, nil, false, invalidValue, `cannot have "L" and "#" modifiers together`},
 		{Hash + Last, nil, false, invalidValue, `cannot have "L" and "#" modifiers together`},
 		{Last + Hash + "2", nil, false, invalidValue, `cannot have "L" and "#" modifiers together`},
+		{"a", nil, false, invalidValue, `unknown modifier "a"`},
 		{Last, nil, true, invalidValue, ""},
 		{Hash + "2", nil, false, 2, ""},
 		{Last, nil, true, invalidValue, ""},
@@ -204,6 +351,13 @@ func TestParseDowDateField(t *testing.T) {
 				test.fieldNexter, test.modifiers, dfn, test.fieldNexter, test.resultLast, test.resultHash,
 			)
 		}
+	}
+}
+
+func TestNewUnknownModifierError(t *testing.T) {
+	err := newUnknownModifierError("modifiers")
+	if err.Error() != `unknown modifier "modifiers"` {
+		t.Fail()
 	}
 }
 

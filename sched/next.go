@@ -114,7 +114,7 @@ func newDomFieldNexter(nexter fieldNexter, isLast, isWeekday bool) (*domFieldNex
 				return nil, fmt.Errorf("invalid range or step for %q modifier", Last)
 			}
 		case valueNexter:
-			return nil, fmt.Errorf("cannot have static value for %q modifier", Last)
+			return nil, fmt.Errorf("cannot have single, static value for %q modifier", Last)
 		}
 	}
 	return &domFieldNexter{
